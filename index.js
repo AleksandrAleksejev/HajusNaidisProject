@@ -6,7 +6,6 @@ const swaggerUi = require("swagger-ui-express");
 const yamljs = require("yamljs");
 const swaggerDocument = yamljs.load("./docs/swagger.yaml");
 
-// Позволяет Express читать JSON-тело запросов
 app.use(express.json());
 
 const games = [
@@ -20,7 +19,7 @@ const games = [
     { id: 8, name: "Forza Horizon 5", price: 59.99 }
 ];
 
-// --- Получить список всех игр ---
+// --- Получить все игры ---
 app.get("/games", (req, res) => {
     res.json(games);
 });
@@ -29,15 +28,10 @@ app.get("/games", (req, res) => {
 app.get("/games/:id", (req, res) => {
     const id = parseInt(req.params.id);
 
-    if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid ID format" });
-    }
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID format" });
 
     const game = games.find(g => g.id === id);
-
-    if (!game) {
-        return res.status(404).json({ error: "Game not found" });
-    }
+    if (!game) return res.status(404).json({ error: "Game not found" });
 
     res.json(game);
 });
@@ -45,21 +39,41 @@ app.get("/games/:id", (req, res) => {
 // --- Добавить новую игру ---
 app.post("/games", (req, res) => {
     if (!req.body.name || req.body.price === undefined) {
-        return res.status(400).json({ error: "Missing required fields: name or price" });
+        return res.status(400).send({ error: "Missing required fields: name or price" });
     }
 
-    const newGame = {
-        id: games.length + 1,
+    const game = {
+        id: games.length ? Math.max(...games.map(g => g.id)) + 1 : 1,
         name: req.body.name,
         price: req.body.price
     };
 
-    games.push(newGame);
-    res.status(201).json(newGame); // Возвращаем добавленную игру
+    games.push(game);
+    res.status(201)
+        .location(`${getBaseUrl(req)}/games/${game.id}`)
+        .json(game);
 });
 
-// --- Swagger документация ---
+// --- Удалить игру по ID ---
+app.delete("/games/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID format" });
+
+    const index = games.findIndex(g => g.id === id);
+    if (index === -1) return res.status(404).json({ error: "Game not found" });
+
+    games.splice(index, 1);
+    res.status(204).send();
+});
+
+// --- Swagger ---
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// --- Функция для получения базового URL ---
+function getBaseUrl(req) {
+    const protocol = req.connection && req.connection.encrypted ? "https" : "http";
+    return `${protocol}://${req.headers.host}`;
+}
 
 // --- Запуск сервера ---
 app.listen(port, () => {
