@@ -7,8 +7,9 @@ const yamljs = require("yamljs");
 const swaggerDocument = yamljs.load("./docs/swagger.yaml");
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // на всякий случай
 
-const games = [
+let games = [
     { id: 1, name: "Witcher 3", price: 29.99 },
     { id: 2, name: "Cyberpunk 2077", price: 59.99 },
     { id: 3, name: "Minecraft", price: 26.99 },
@@ -19,42 +20,30 @@ const games = [
     { id: 8, name: "Forza Horizon 5", price: 59.99 }
 ];
 
-// --- Получить все игры ---
-app.get("/games", (req, res) => {
-    res.json(games);
-});
+// GET all games
+app.get("/games", (req, res) => res.json(games));
 
-// --- Получить игру по ID ---
+// GET game by ID
 app.get("/games/:id", (req, res) => {
     const id = parseInt(req.params.id);
-
     if (isNaN(id)) return res.status(400).json({ error: "Invalid ID format" });
-
     const game = games.find(g => g.id === id);
     if (!game) return res.status(404).json({ error: "Game not found" });
-
     res.json(game);
 });
 
-// --- Добавить новую игру ---
+// POST add new game
 app.post("/games", (req, res) => {
-    if (!req.body.name || req.body.price === undefined) {
-        return res.status(400).send({ error: "Missing required fields: name or price" });
-    }
+    const { name, price } = req.body;
+    if (!name || price === undefined) return res.status(400).json({ error: "Missing name or price" });
 
-    const game = {
-        id: games.length ? Math.max(...games.map(g => g.id)) + 1 : 1,
-        name: req.body.name,
-        price: req.body.price
-    };
-
+    const id = games.length ? Math.max(...games.map(g => g.id)) + 1 : 1;
+    const game = { id, name, price };
     games.push(game);
-    res.status(201)
-        .location(`${getBaseUrl(req)}/games/${game.id}`)
-        .json(game);
+    res.status(201).json(game);
 });
 
-// --- Удалить игру по ID ---
+// DELETE game by ID
 app.delete("/games/:id", (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: "Invalid ID format" });
@@ -66,17 +55,11 @@ app.delete("/games/:id", (req, res) => {
     res.status(204).send();
 });
 
-// --- Swagger ---
+// Swagger UI
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// --- Функция для получения базового URL ---
-function getBaseUrl(req) {
-    const protocol = req.connection && req.connection.encrypted ? "https" : "http";
-    return `${protocol}://${req.headers.host}`;
-}
-
-// --- Запуск сервера ---
+// Start server
 app.listen(port, () => {
-    console.log(`API up at: http://localhost:${port}`);
-    console.log(`Swagger docs: http://localhost:${port}/docs`);
+    console.log(`API running: http://localhost:${port}`);
+    console.log(`Swagger UI: http://localhost:${port}/docs`);
 });
