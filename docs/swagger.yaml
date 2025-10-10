@@ -1,0 +1,63 @@
+openapi: 3.0.2
+info:
+  title: Games-Api
+  version: 1.0.0
+  description: This is swagger UI for Games API
+paths:
+  /games:
+    get:
+      tags:
+        - games
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              examples:
+                'List of games ':
+                  value:
+                    - Wither 3
+                    - Cyberpank 2077
+          description: application/json
+      summary: Get a list of all games
+      description: Return a list of all games in API
+  '/games/{id}':
+    get:
+      tags:
+        - details
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+              examples:
+                'full details of a given id game ':
+                  value: "    { id: 1, name: \"Witcher 3\", price: 29.99 },\r\n    { id: 2, name: \"Cyberpunk 2077\", price: 59.99 },\r\n    { id: 3, name: \"Minecraft\", price: 26.99 },\r\n    { id: 4, name: \"CS-GO\", price: 0 },\r\n    { id: 5, name: \"Roblox\", price: 0 },\r\n    { id: 6, name: \"Valorant\", price: 29.99 },\r\n    { id: 7, name: \"GTA5\", price: 0 },\r\n    { id: 8, name: \"Forza Horizon 5\", price: 59.99 }"
+          description: 'full details of a given id game '
+        '404':
+          content:
+            application/json: {}
+      operationId: id
+      summary: Get full details on the game
+      description: 'return full details of a given id game '
+    parameters:
+      -
+        name: id
+        in: path
+        required: true
+components:
+  schemas:
+    error:
+      title: Root Type for error
+      description: ''
+      type: object
+      properties:
+        error:
+          type: string
+      example:
+        error: ' Error message .'
