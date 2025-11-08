@@ -1,0 +1,31 @@
+get:
+    tags:
+        - details
+    responses:
+        '200':
+            content:
+                application/json:
+                    schema:
+                        type: array
+                        items:
+                            type: string
+                    examples:
+                        Returns full details of a given id game:
+                            value:
+                                id: 1
+                                name: Witcher 3
+                                price: 29.99
+        '404':
+            content:
+                application/json:
+                    schema:
+                        type: array
+                        items:
+                            type: string
+                    examples:
+                        Game not found in the list of games:
+                            value:
+                                error: Game not found
+            description: "Game not found in the list of games\r\n"
+    summary: Get full details of a game
+    description: Returns full details of a given id game
