@@ -1,8 +1,11 @@
-const app = require('express')()
+const express = require('express')
+const app = express()
 const port = 8080
 const swaggerUi = require('swagger-ui-express')
 const yamljs = require('yamljs')
 const swaggerDocument = yamljs.load('./docs/swagger.yaml')
+
+app.use(express.json())
 
 const games = [
   { id: 1, name: "Witcher 3", price: 29.99 },
@@ -27,8 +30,48 @@ app.get('/games/:id', (req, res) => {
   res.send(games[req.params.id - 1])
 })
 
+app.post('/games', (req, res) => {
+  // Проверка, что поля переданы
+  if (!req.body.name || !req.body.price) {
+    return res.status(400).send({ error: 'One or all params are missing' })
+  }
+
+  // Создаём новый объект игры
+  let game = {
+    id: games.length + 1,
+    price: req.body.price,
+    name: req.body.name
+  }
+
+  // Добавляем игру в массив
+  games.push(game)
+
+  // Возвращаем ответ с кодом 201 и ссылкой на новую игру
+  res.status(201)
+    .location(`${getBaseUrl(req)}/games/${games.length}`)
+    .send(game)
+})
+
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 app.listen(port, () => {
   console.log(`API up at: http://localhost:${port}`)
 })
+
+app.delete('/games/:id', (req, res) => {
+  if (typeof games[req.params.id - 1] === 'undefined') {
+    return res.status(404).send({ error: "Game not found" })
+  }
+
+  games.splice(req.params.id - 1, 1)
+
+  res.status(204).send({ error: "No content" })
+})
+
+
+// Функция для получения базового URL (http/https)
+function getBaseUrl(req) {
+  return req.connection && req.connection.encrypted
+    ? 'https'
+    : 'http' + '://' + req.headers.host
+}
