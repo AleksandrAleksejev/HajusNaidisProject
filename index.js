@@ -1,4 +1,5 @@
 const express = require('express')
+const cors = require('cors')       
 const app = express()
 const port = 8080
 const swaggerUi = require('swagger-ui-express')
@@ -6,6 +7,7 @@ const yamljs = require('yamljs')
 const swaggerDocument = yamljs.load('./docs/swagger.yaml')
 
 app.use(express.json())
+app.use(cors())                    
 
 const games = [
   { id: 1, name: "Witcher 3", price: 29.99 },
@@ -18,60 +20,60 @@ const games = [
   { id: 8, name: "Forza Horizon 5", price: 59.99 }
 ]
 
+// GET all games
 app.get('/games', (req, res) => {
   res.send(games)
 })
 
+// GET one game by ID
 app.get('/games/:id', (req, res) => {
-  if (typeof games[req.params.id - 1] === 'undefined') {
+  if (!games[req.params.id - 1]) {
     return res.status(404).send({ error: "Game not found" })
   }
 
   res.send(games[req.params.id - 1])
 })
 
+// POST create new game
 app.post('/games', (req, res) => {
-  // Проверка, что поля переданы
   if (!req.body.name || !req.body.price) {
     return res.status(400).send({ error: 'One or all params are missing' })
   }
 
-  // Создаём новый объект игры
   let game = {
     id: games.length + 1,
     price: req.body.price,
     name: req.body.name
   }
 
-  // Добавляем игру в массив
   games.push(game)
 
-  // Возвращаем ответ с кодом 201 и ссылкой на новую игру
   res.status(201)
-    .location(`${getBaseUrl(req)}/games/${games.length}`)
+    .location(`${getBaseUrl(req)}/games/${game.id}`)
     .send(game)
 })
 
+// DELETE a game
+app.delete('/games/:id', (req, res) => {
+  if (!games[req.params.id - 1]) {
+    return res.status(404).send({ error: "Game not found" })
+  }
+
+  games.splice(req.params.id - 1, 1)
+
+  // 204 = No Content →
+  res.status(204).send()
+})
+
+// Swagger docs
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 app.listen(port, () => {
   console.log(`API up at: http://localhost:${port}`)
 })
 
-app.delete('/games/:id', (req, res) => {
-  if (typeof games[req.params.id - 1] === 'undefined') {
-    return res.status(404).send({ error: "Game not found" })
-  }
-
-  games.splice(req.params.id - 1, 1)
-
-  res.status(204).send({ error: "No content" })
-})
-
-
-// Функция для получения базового URL (http/https)
+// helper
 function getBaseUrl(req) {
-  return req.connection && req.connection.encrypted
-    ? 'https'
-    : 'http' + '://' + req.headers.host
+  return (req.connection && req.connection.encrypted ? 'https' : 'http')
+    + '://' + req.headers.host
 }
